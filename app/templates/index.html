@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lung Cancer Detection System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header>
+    <h1>Lung Cancer Detection System</h1>
+    <p>CT Scan Based Medical Image Analysis</p>
+</header>
+
+<div class="container">
+
+    <div class="card">
+        <h2>Upload CT Scan</h2>
+
+        <form method="POST" enctype="multipart/form-data">
+            <label>CT Scan Image</label>
+            <input type="file" name="image" required>
+
+            <label>Select Prediction Model</label>
+            <select name="model">
+                <option>Custom CNN</option>
+                <option>VGG16</option>
+                <option>Random Forest</option>
+                <option>SVM</option>
+                <option>KNN</option>
+                <option>Decision Tree</option>
+                <option>Compare All</option>
+            </select>
+
+            <button type="submit">Analyze Image</button>
+        </form>
+    </div>
+
+    {% if result %}
+    <div class="card result-card">
+        <h2>Prediction Result</h2>
+        <p class="result-text {{ result|lower }}">{{ result }}</p>
+
+        <p class="explanation">
+            {% if result == "Normal" %}
+                The lung tissue appears healthy with no abnormal growth.
+            {% elif result == "Benign" %}
+                The scan indicates a non-cancerous abnormal growth.
+            {% elif result == "Malignant" %}
+                The scan shows characteristics associated with cancerous lung tissue.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    {% if comparison %}
+    <div class="card">
+        <h2>Model Comparison</h2>
+        <table>
+            <tr>
+                <th>Model</th>
+                <th>Prediction</th>
+            </tr>
+            {% for model, pred in comparison.items() %}
+            <tr>
+                <td>{{ model }}</td>
+                <td class="{{ pred|lower }}">{{ pred }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- <div class="card disclaimer">
+        <h3>Medical Disclaimer</h3>
+        <p>
+            This system is developed for educational and research purposes only.
+            It is not intended to replace professional medical diagnosis.
+            Final clinical decisions must always be made by qualified healthcare professionals.
+        </p>
+    </div> -->
+
+</div>
+
+<footer>
+    <p>Academic Project | Lung Cancer Detection using Machine Learning & Deep Learning</p>
+</footer>
+
+</body>
+</html>

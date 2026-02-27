@@ -1,0 +1,11 @@
+venv/
+data/
+models/
+evaluation_results/
+logs/
+*.h5
+*.pkl
+*.npy
+__pycache__/
+.DS_Store
+app/static/
