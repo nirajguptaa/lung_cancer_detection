@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lung Cancer Detection System</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>Lung Cancer Detection System</h1>
+  <p>CT Scan Based Medical Image Analysis using EfficientNetB0</p>
+</header>
+
+<div class="container">
+
+  <!-- ── Upload Card ─────────────────────────────── -->
+  <div class="card">
+    <h2>Patient Information &amp; CT Scan Upload</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+
+      <label>Patient Age</label>
+      <input type="number" name="age" min="0" max="120"
+             value="{{ age or '' }}" required>
+
+      <label>Smoking History</label>
+      <select name="smoking">
+        <option value="no"  {% if smoking  == 'no'  %}selected{% endif %}>No</option>
+        <option value="yes" {% if smoking  == 'yes' %}selected{% endif %}>Yes</option>
+      </select>
+
+      <label>Family History of Lung Cancer</label>
+      <select name="family_history">
+        <option value="no"  {% if family_history == 'no'  %}selected{% endif %}>No</option>
+        <option value="yes" {% if family_history == 'yes' %}selected{% endif %}>Yes</option>
+      </select>
+
+      <label>Symptoms</label>
+      <select name="symptoms">
+        <option value="none"        {% if symptoms == 'none'        %}selected{% endif %}>None</option>
+        <option value="cough"       {% if symptoms == 'cough'       %}selected{% endif %}>Persistent Cough</option>
+        <option value="breathing"   {% if symptoms == 'breathing'   %}selected{% endif %}>Breathing Difficulty</option>
+        <option value="chest_pain"  {% if symptoms == 'chest_pain'  %}selected{% endif %}>Chest Pain</option>
+      </select>
+
+      <label>Upload CT Scan</label>
+      <input type="file" name="image" accept="image/*" required>
+
+      <p><strong>Model:</strong> EfficientNetB0 (Transfer Learning + Fine-Tuned)</p>
+
+      <button type="submit">Analyse Scan</button>
+
+    </form>
+
+    {% if error %}
+      <p class="error-msg">⚠ {{ error }}</p>
+    {% endif %}
+  </div>
+
+
+  <!-- ── Results ─────────────────────────────────── -->
+  {% if result %}
+
+  <div class="card result-card">
+    <h2>Prediction Result</h2>
+
+    <p class="result-text {{ result | lower }}">{{ result }}</p>
+
+    <p><strong>Confidence:</strong> {{ confidence | round(2) }}%</p>
+
+    <p>
+      <strong>Risk Level:</strong>
+      <span class="badge {{ risk | lower | replace(' ', '-') }}">{{ risk }}</span>
+    </p>
+
+    <h3>Patient Information</h3>
+    <table class="info-table">
+      <tr><th>Age</th>            <td>{{ age }}</td></tr>
+      <tr><th>Smoking</th>        <td>{{ smoking | capitalize }}</td></tr>
+      <tr><th>Family History</th> <td>{{ family_history | capitalize }}</td></tr>
+      <tr><th>Symptoms</th>       <td>{{ symptoms | replace('_', ' ') | capitalize }}</td></tr>
+    </table>
+
+    <p class="explanation">
+      {% if result == "Normal" %}
+        The lung tissue appears healthy with no abnormal growth detected.
+      {% elif result == "Benign" %}
+        The scan indicates a non-cancerous abnormal growth. Medical consultation is advised.
+      {% elif result == "Malignant" %}
+        The scan shows characteristics associated with cancerous lung tissue.
+        <strong>Immediate medical evaluation is strongly recommended.</strong>
+      {% endif %}
+    </p>
+  </div>
+
+
+  <!-- ── Grad-CAM Panel ──────────────────────────── -->
+  <div class="card gradcam-card">
+    <h2>Model Attention — Grad-CAM Visualisation</h2>
+
+    <div class="scan-grid">
+
+      <!-- Original upload -->
+      {% if uploaded_filename %}
+      <div class="scan-item">
+        <p class="scan-label">Original CT Scan</p>
+        <img src="{{ url_for('static', filename=uploaded_filename) }}"
+             alt="Uploaded CT scan"
+             class="scan-img">
+      </div>
+      {% endif %}
+
+      <!-- Grad-CAM overlay -->
+      {% if heatmap_filename %}
+      <div class="scan-item">
+        <p class="scan-label">Grad-CAM Heatmap &amp; Detected Region</p>
+        <img src="{{ url_for('static', filename=heatmap_filename) }}"
+             alt="Grad-CAM heatmap overlay"
+             class="scan-img">
+      </div>
+      {% else %}
+      <div class="scan-item">
+        <p class="scan-label scan-warn">
+          Grad-CAM could not be generated for this scan.
+        </p>
+      </div>
+      {% endif %}
+
+    </div><!-- /scan-grid -->
+
+    <div class="gradcam-legend">
+      <span class="legend-dot" style="background:#00f;"></span> Low attention &nbsp;
+      <span class="legend-dot" style="background:#0f0;"></span> Medium &nbsp;
+      <span class="legend-dot" style="background:#ff0;"></span> High &nbsp;
+      <span class="legend-dot" style="background:#f00;"></span> Peak &nbsp;
+      <span class="legend-box"></span> Suspected region (green box)
+    </div>
+
+    <p class="gradcam-note">
+      Highlighted regions show where the AI focused while making its prediction.
+      The green bounding box marks the area of highest model attention —
+      this is the most likely location of any detected abnormality.
+    </p>
+  </div>
+
+
+  <!-- ── Probability Chart ───────────────────────── -->
+  <div class="card">
+    <h2>Prediction Probabilities</h2>
+    <canvas id="probChart" width="400" height="200"></canvas>
+  </div>
+
+  {% endif %}
+
+
+  <!-- ── Disclaimer ──────────────────────────────── -->
+  <div class="card disclaimer">
+    <h3>⚕ Medical Disclaimer</h3>
+    <p>
+      This system is developed for academic and research purposes only.
+      It is <strong>not</strong> intended to replace professional medical diagnosis.
+      Final clinical decisions must always be made by qualified healthcare professionals.
+    </p>
+  </div>
+
+</div><!-- /container -->
+
+
+<footer>
+  <p>Academic Project | Lung Cancer Detection using Deep Learning (EfficientNetB0)</p>
+</footer>
+
+
+<!-- ── Chart.js ──────────────────────────────────── -->
+{% if probs %}
+<script>
+(function () {
+  const ctx   = document.getElementById('probChart');
+  const probs = {{ probs | tojson }};
+
+  if (!ctx || !probs) return;
+
+  const colours = {
+    Benign:    { bg: 'rgba(52, 152, 219, 0.7)', border: 'rgba(52, 152, 219, 1)'  },
+    Malignant: { bg: 'rgba(231, 76,  60,  0.7)', border: 'rgba(231, 76,  60,  1)' },
+    Normal:    { bg: 'rgba(46,  204, 113, 0.7)', border: 'rgba(46,  204, 113, 1)' },
+  };
+  const labels  = ['Benign', 'Malignant', 'Normal'];
+  const bgCols  = labels.map(l => colours[l].bg);
+  const bdrCols = labels.map(l => colours[l].border);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Prediction Probability',
+        data: probs,
+        backgroundColor: bgCols,
+        borderColor: bdrCols,
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${(ctx.parsed.y * 100).toFixed(1)} %`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 1,
+          ticks: {
+            callback: v => (v * 100).toFixed(0) + '%'
+          },
+          title: { display: true, text: 'Probability' }
+        },
+        x: {
+          title: { display: true, text: 'Class' }
+        }
+      }
+    }
+  });
+}());
+</script>
+{% endif %}
+
+</body>
+</html>
