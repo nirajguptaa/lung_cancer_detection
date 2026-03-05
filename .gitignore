@@ -8,4 +8,7 @@ logs/
 *.npy
 __pycache__/
 .DS_Store
-app/static/
+app/static/*.png
+app/static/*.jpg
+app/static/*.jpeg
+app/static/*.webp
