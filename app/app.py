@@ -1,78 +1,169 @@
+"""
+app.py — Flask entry point for the Lung Cancer Detection System.
+
+Project layout (relative to this file, which lives in /app):
+    ../models/efficientnet_final.h5   ← trained model
+    ../templates/index.html           ← Jinja2 template
+    ../static/                        ← uploaded + generated images
+"""
+
 import os
-import numpy as np
+import uuid
+
 import cv2
-import joblib
+import numpy as np
 from flask import Flask, render_template, request
+from tensorflow.keras.applications.efficientnet import preprocess_input
 from tensorflow.keras.models import load_model
-from tensorflow.keras.applications.vgg16 import preprocess_input
 
-app = Flask(__name__)
+from gradcam import generate_gradcam, overlay_heatmap   # our XAI module
 
-MODEL_DIR = "models"
-IMG_SIZE = 224
-CLASS_NAMES = ["Normal", "Benign", "Malignant"]
+# ──────────────────────────────────────────────
+# App & paths
+# ──────────────────────────────────────────────
 
-# Load CNN models
-cnn_models = {
-    "Custom CNN": load_model(os.path.join(MODEL_DIR, "custom_cnn.h5")),
-    "VGG16": load_model(os.path.join(MODEL_DIR, "vgg16.h5"))
-}
+app = Flask(__name__, template_folder="../templates", static_folder="../static")
 
-# Load ML models
-ml_models = {
-    "Random Forest": joblib.load(os.path.join(MODEL_DIR, "Random_Forest.pkl")),
-    "SVM": joblib.load(os.path.join(MODEL_DIR, "SVM.pkl")),
-    "KNN": joblib.load(os.path.join(MODEL_DIR, "KNN.pkl")),
-    "Decision Tree": joblib.load(os.path.join(MODEL_DIR, "Decision_Tree.pkl"))
-}
+MODEL_PATH  = os.path.join(os.path.dirname(__file__), "../models/efficientnet_final.h5")
+STATIC_DIR  = os.path.join(os.path.dirname(__file__), "../static")
+IMG_SIZE    = 224
 
-def preprocess_image(image_path):
-    img = cv2.imread(image_path)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
-    img = img / 255.0
-    return np.expand_dims(img, axis=0)
+# Must match train_generator.class_indices exactly
+CLASS_NAMES = ["Benign", "Malignant", "Normal"]
 
-def preprocess_for_ml(image_path):
-    img = cv2.imread(image_path)
-    img = cv2.resize(img, (64, 64))
-    img = img / 255.0
-    return img.reshape(1, -1)
+# Load once at start-up (expensive)
+model = load_model(MODEL_PATH)
+model.trainable = False          # inference only — saves memory
+
+
+# ──────────────────────────────────────────────
+# Image helpers
+# ──────────────────────────────────────────────
+
+def preprocess_image(image_path: str) -> np.ndarray:
+    """
+    Read a CT scan from disk and return a batch-of-one float32 tensor
+    preprocessed the same way as during EfficientNet training.
+    """
+    img_bgr = cv2.imread(image_path)
+    if img_bgr is None:
+        raise ValueError(f"Could not read image: {image_path}")
+
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    img_rgb = cv2.resize(img_rgb, (IMG_SIZE, IMG_SIZE),
+                         interpolation=cv2.INTER_AREA)
+
+    # EfficientNet-specific scaling (maps pixel values to [-1, +1])
+    img_pre = preprocess_input(img_rgb.astype(np.float32))
+
+    return np.expand_dims(img_pre, axis=0)   # (1, 224, 224, 3)
+
+
+def save_gradcam_overlay(image_path: str,
+                         img_array:  np.ndarray,
+                         base_filename: str) -> str | None:
+    """
+    Run Grad-CAM, overlay the heatmap on the original image, save to
+    /static, and return the *relative* path suitable for url_for().
+
+    Returns None (silently) if anything goes wrong so the rest of the
+    page still renders.
+    """
+    try:
+        heatmap = generate_gradcam(model, img_array)
+
+        original_bgr = cv2.imread(image_path)
+        if original_bgr is None:
+            raise ValueError("Cannot reload original image for overlay.")
+
+        overlay = overlay_heatmap(heatmap, original_bgr,
+                                  alpha=0.45, thresh_val=160)
+
+        heatmap_filename = "heatmap_" + base_filename
+        heatmap_path_abs = os.path.join(STATIC_DIR, heatmap_filename)
+        cv2.imwrite(heatmap_path_abs, overlay)
+
+        # Return path relative to /static so url_for('static', …) works
+        return heatmap_filename
+
+    except Exception as exc:
+        app.logger.warning("Grad-CAM failed: %s", exc)
+        return None
+
+
+# ──────────────────────────────────────────────
+# Routes
+# ──────────────────────────────────────────────
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    result = None
-    comparison = {}
+    # Template context defaults
+    ctx = dict(
+        result=None, confidence=None, risk=None, probs=None,
+        age=None, smoking=None, family_history=None, symptoms=None,
+        heatmap_filename=None,
+        uploaded_filename=None,
+    )
 
-    if request.method == "POST":
-        file = request.files["image"]
-        model_choice = request.form["model"]
+    if request.method != "POST":
+        return render_template("index.html", **ctx)
 
-        image_path = os.path.join("static", file.filename)
-        file.save(image_path)
+    # ── Patient form fields ──────────────────────────────────────────────
+    ctx["age"]            = request.form.get("age")
+    ctx["smoking"]        = request.form.get("smoking")
+    ctx["family_history"] = request.form.get("family_history")
+    ctx["symptoms"]       = request.form.get("symptoms")
 
-        if model_choice in cnn_models:
-            img = preprocess_image(image_path)
-            pred = cnn_models[model_choice].predict(img)
-            result = CLASS_NAMES[np.argmax(pred)]
+    # ── File validation ──────────────────────────────────────────────────
+    if "image" not in request.files or request.files["image"].filename == "":
+        return render_template("index.html", **ctx,
+                               error="Please upload a CT scan image.")
 
-        elif model_choice == "Compare All":
-            for name, model in cnn_models.items():
-                img = preprocess_image(image_path)
-                pred = model.predict(img)
-                comparison[name] = CLASS_NAMES[np.argmax(pred)]
+    file = request.files["image"]
 
-            for name, model in ml_models.items():
-                img = preprocess_for_ml(image_path)
-                pred = model.predict(img)
-                comparison[name] = CLASS_NAMES[pred[0]]
+    # Persist original upload
+    base_filename       = str(uuid.uuid4()) + ".png"
+    image_path_abs      = os.path.join(STATIC_DIR, base_filename)
+    os.makedirs(STATIC_DIR, exist_ok=True)
+    file.save(image_path_abs)
+    ctx["uploaded_filename"] = base_filename
 
-        else:
-            img = preprocess_for_ml(image_path)
-            pred = ml_models[model_choice].predict(img)
-            result = CLASS_NAMES[pred[0]]
+    # ── Preprocessing ────────────────────────────────────────────────────
+    try:
+        img_array = preprocess_image(image_path_abs)
+    except ValueError as exc:
+        app.logger.error("Preprocessing error: %s", exc)
+        return render_template("index.html", **ctx,
+                               error="Invalid image file. Please upload a valid CT scan.")
 
-    return render_template("index.html", result=result, comparison=comparison)
+    # ── Model inference ──────────────────────────────────────────────────
+    raw_preds      = model.predict(img_array, verbose=0)          # (1, 3)
+    probs          = raw_preds[0].tolist()                        # Python list
+    predicted_idx  = int(np.argmax(raw_preds))
+    result         = CLASS_NAMES[predicted_idx]
+    confidence     = float(np.max(raw_preds)) * 100
+
+    app.logger.info("Prediction: %s | Confidence: %.1f%% | Raw: %s",
+                    result, confidence, probs)
+
+    # ── Risk classification ──────────────────────────────────────────────
+    risk_map = {"Normal": "Low Risk", "Benign": "Moderate Risk", "Malignant": "High Risk"}
+    risk = risk_map[result]
+
+    ctx.update(result=result, confidence=confidence, risk=risk, probs=probs)
+
+    # ── Grad-CAM ─────────────────────────────────────────────────────────
+    ctx["heatmap_filename"] = save_gradcam_overlay(image_path_abs,
+                                                   img_array,
+                                                   base_filename)
+
+    return render_template("index.html", **ctx)
+
+
+# ──────────────────────────────────────────────
+# Entry point
+# ──────────────────────────────────────────────
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # debug=False for any public / shared environment
+    app.run(host="0.0.0.0", port=5001, debug=True)
