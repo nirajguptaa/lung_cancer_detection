@@ -4,55 +4,76 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lung Cancer Detection System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <header>
-  <h1>Lung Cancer Detection System</h1>
-  <p>CT Scan Based Medical Image Analysis using EfficientNetB0</p>
+  <div class="header-inner">
+    <div class="header-badge">AI-Powered</div>
+    <h1>Lung Cancer Detection System</h1>
+    <p>CT Scan Analysis using EfficientNetB0 · Explainable AI · Medical Assistant</p>
+  </div>
 </header>
 
 <div class="container">
 
   <!-- ── Upload Card ─────────────────────────────── -->
   <div class="card">
-    <h2>Patient Information &amp; CT Scan Upload</h2>
-
+    <h2><span class="card-icon">⬆</span> Patient Information &amp; CT Scan Upload</h2>
     <form method="POST" enctype="multipart/form-data">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Patient Age</label>
+          <input type="number" name="age" min="0" max="120" value="{{ age or '' }}" required>
+        </div>
+        <div class="form-group">
+          <label>Smoking History</label>
+          <select name="smoking">
+            <option value="no"  {% if smoking  == 'no'  %}selected{% endif %}>No</option>
+            <option value="yes" {% if smoking  == 'yes' %}selected{% endif %}>Yes</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Family History of Lung Cancer</label>
+          <select name="family_history">
+            <option value="no"  {% if family_history == 'no'  %}selected{% endif %}>No</option>
+            <option value="yes" {% if family_history == 'yes' %}selected{% endif %}>Yes</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Symptoms</label>
+          <select name="symptoms">
+            <option value="none"       {% if symptoms == 'none'       %}selected{% endif %}>None</option>
+            <option value="cough"      {% if symptoms == 'cough'      %}selected{% endif %}>Persistent Cough</option>
+            <option value="breathing"  {% if symptoms == 'breathing'  %}selected{% endif %}>Breathing Difficulty</option>
+            <option value="chest_pain" {% if symptoms == 'chest_pain' %}selected{% endif %}>Chest Pain</option>
+          </select>
+        </div>
+      </div>
 
-      <label>Patient Age</label>
-      <input type="number" name="age" min="0" max="120"
-             value="{{ age or '' }}" required>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" name="image" id="fileInput" accept="image/*" required>
+        <div class="upload-content">
+          <div class="upload-icon">🫁</div>
+          <p class="upload-primary">Drop CT scan here or click to browse</p>
+          <p class="upload-secondary">Supports PNG, JPG, JPEG · Max 16 MB</p>
+        </div>
+        <div class="upload-preview" id="uploadPreview" style="display:none">
+          <img id="previewImg" src="" alt="Preview">
+          <p id="previewName"></p>
+        </div>
+      </div>
 
-      <label>Smoking History</label>
-      <select name="smoking">
-        <option value="no"  {% if smoking  == 'no'  %}selected{% endif %}>No</option>
-        <option value="yes" {% if smoking  == 'yes' %}selected{% endif %}>Yes</option>
-      </select>
-
-      <label>Family History of Lung Cancer</label>
-      <select name="family_history">
-        <option value="no"  {% if family_history == 'no'  %}selected{% endif %}>No</option>
-        <option value="yes" {% if family_history == 'yes' %}selected{% endif %}>Yes</option>
-      </select>
-
-      <label>Symptoms</label>
-      <select name="symptoms">
-        <option value="none"        {% if symptoms == 'none'        %}selected{% endif %}>None</option>
-        <option value="cough"       {% if symptoms == 'cough'       %}selected{% endif %}>Persistent Cough</option>
-        <option value="breathing"   {% if symptoms == 'breathing'   %}selected{% endif %}>Breathing Difficulty</option>
-        <option value="chest_pain"  {% if symptoms == 'chest_pain'  %}selected{% endif %}>Chest Pain</option>
-      </select>
-
-      <label>Upload CT Scan</label>
-      <input type="file" name="image" accept="image/*" required>
-
-      <p><strong>Model:</strong> EfficientNetB0 (Transfer Learning + Fine-Tuned)</p>
-
-      <button type="submit">Analyse Scan</button>
-
+      <p class="model-tag">Model: EfficientNetB0 · Transfer Learning + Fine-Tuned</p>
+      <button type="submit" class="btn-analyse">
+        <span>Analyse Scan</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
     </form>
 
     {% if error %}
@@ -61,178 +82,452 @@
   </div>
 
 
-  <!-- ── Results ─────────────────────────────────── -->
   {% if result %}
 
-  <div class="card result-card">
-    <h2>Prediction Result</h2>
+  <!-- ── Result Card ──────────────────────────────── -->
+  <div class="card result-card result-{{ result | lower }}">
+    <h2><span class="card-icon">🔬</span> Prediction Result</h2>
+    <div class="result-hero">
+      <div class="result-label {{ result | lower }}">{{ result }}</div>
+      <div class="result-meta">
+        <div class="meta-pill">
+          <span class="meta-label">Confidence</span>
+          <span class="meta-value">{{ confidence | round(1) }}%</span>
+        </div>
+        <div class="meta-pill risk-pill {{ risk | lower | replace(' ', '-') }}">
+          <span class="meta-label">Risk Level</span>
+          <span class="meta-value">{{ risk }}</span>
+        </div>
+      </div>
+      <a href="/download_report" class="btn-analyse" style="margin-top:20px">
+Download Medical Report (PDF)
+</a>
+    </div>
 
-    <p class="result-text {{ result | lower }}">{{ result }}</p>
+    <div class="confidence-bar-wrap">
+      <div class="confidence-bar" style="width: {{ confidence | round(0) }}%"></div>
+    </div>
 
-    <p><strong>Confidence:</strong> {{ confidence | round(2) }}%</p>
+    <div class="info-grid">
+      <div class="info-item"><span class="info-key">Age</span><span class="info-val">{{ age }}</span></div>
+      <div class="info-item"><span class="info-key">Smoking</span><span class="info-val">{{ smoking | capitalize }}</span></div>
+      <div class="info-item"><span class="info-key">Family History</span><span class="info-val">{{ family_history | capitalize }}</span></div>
+      <div class="info-item"><span class="info-key">Symptoms</span><span class="info-val">{{ symptoms | replace('_', ' ') | capitalize }}</span></div>
+    </div>
 
-    <p>
-      <strong>Risk Level:</strong>
-      <span class="badge {{ risk | lower | replace(' ', '-') }}">{{ risk }}</span>
-    </p>
-
-    <h3>Patient Information</h3>
-    <table class="info-table">
-      <tr><th>Age</th>            <td>{{ age }}</td></tr>
-      <tr><th>Smoking</th>        <td>{{ smoking | capitalize }}</td></tr>
-      <tr><th>Family History</th> <td>{{ family_history | capitalize }}</td></tr>
-      <tr><th>Symptoms</th>       <td>{{ symptoms | replace('_', ' ') | capitalize }}</td></tr>
-    </table>
-
-    <p class="explanation">
+    <div class="explanation-box explanation-{{ result | lower }}">
       {% if result == "Normal" %}
-        The lung tissue appears healthy with no abnormal growth detected.
+        The lung tissue appears healthy with no abnormal growth detected. Routine monitoring is still recommended.
       {% elif result == "Benign" %}
-        The scan indicates a non-cancerous abnormal growth. Medical consultation is advised.
+        The scan indicates a non-cancerous abnormal growth. While not immediately life-threatening, medical consultation is advised to monitor progress.
       {% elif result == "Malignant" %}
-        The scan shows characteristics associated with cancerous lung tissue.
-        <strong>Immediate medical evaluation is strongly recommended.</strong>
+        The scan shows characteristics associated with cancerous lung tissue. <strong>Immediate consultation with an oncologist is strongly recommended.</strong>
       {% endif %}
-    </p>
+    </div>
   </div>
 
 
-  <!-- ── Grad-CAM Panel ──────────────────────────── -->
+  <!-- ── Grad-CAM Card ──────────────────────────────── -->
   <div class="card gradcam-card">
-    <h2>Model Attention — Grad-CAM Visualisation</h2>
-
+    <h2><span class="card-icon">🧠</span> Model Attention — Grad-CAM Visualisation</h2>
     <div class="scan-grid">
-
-      <!-- Original upload -->
       {% if uploaded_filename %}
       <div class="scan-item">
         <p class="scan-label">Original CT Scan</p>
-        <img src="{{ url_for('static', filename=uploaded_filename) }}"
-             alt="Uploaded CT scan"
-             class="scan-img">
+        <img src="{{ url_for('static', filename=uploaded_filename) }}" alt="CT scan" class="scan-img">
       </div>
       {% endif %}
-
-      <!-- Grad-CAM overlay -->
       {% if heatmap_filename %}
       <div class="scan-item">
-        <p class="scan-label">Grad-CAM Heatmap &amp; Detected Region</p>
-        <img src="{{ url_for('static', filename=heatmap_filename) }}"
-             alt="Grad-CAM heatmap overlay"
-             class="scan-img">
+        <p class="scan-label">Grad-CAM · Suspected Region</p>
+        <img src="{{ url_for('static', filename=heatmap_filename) }}" alt="Grad-CAM overlay" class="scan-img">
       </div>
       {% else %}
-      <div class="scan-item">
-        <p class="scan-label scan-warn">
-          Grad-CAM could not be generated for this scan.
-        </p>
+      <div class="scan-item scan-warn-box">
+        <p>Grad-CAM could not be generated for this scan.</p>
       </div>
       {% endif %}
-
-    </div><!-- /scan-grid -->
-
-    <div class="gradcam-legend">
-      <span class="legend-dot" style="background:#00f;"></span> Low attention &nbsp;
-      <span class="legend-dot" style="background:#0f0;"></span> Medium &nbsp;
-      <span class="legend-dot" style="background:#ff0;"></span> High &nbsp;
-      <span class="legend-dot" style="background:#f00;"></span> Peak &nbsp;
-      <span class="legend-box"></span> Suspected region (green box)
     </div>
-
+    <div class="gradcam-legend">
+      <span class="ld blue"></span>Low
+      <span class="ld cyan"></span>Medium
+      <span class="ld yellow"></span>High
+      <span class="ld red"></span>Peak
+      <span class="ld-box"></span>Suspected region
+    </div>
     <p class="gradcam-note">
-      Highlighted regions show where the AI focused while making its prediction.
-      The green bounding box marks the area of highest model attention —
-      this is the most likely location of any detected abnormality.
+      Highlighted regions show where the AI focused. The green box marks the area of highest attention — the most likely location of any detected abnormality.
     </p>
   </div>
 
 
   <!-- ── Probability Chart ───────────────────────── -->
   <div class="card">
-    <h2>Prediction Probabilities</h2>
-    <canvas id="probChart" width="400" height="200"></canvas>
+    <h2><span class="card-icon">📊</span> Prediction Probabilities</h2>
+    <div class="chart-wrap">
+      <canvas id="probChart"></canvas>
+    </div>
   </div>
 
   {% endif %}
 
 
   <!-- ── Disclaimer ──────────────────────────────── -->
-  <div class="card disclaimer">
+  <div class="card disclaimer-card">
     <h3>⚕ Medical Disclaimer</h3>
-    <p>
-      This system is developed for academic and research purposes only.
-      It is <strong>not</strong> intended to replace professional medical diagnosis.
-      Final clinical decisions must always be made by qualified healthcare professionals.
-    </p>
+    <p>This system is developed for academic and research purposes only. It is <strong>not</strong> intended to replace professional medical diagnosis. Final clinical decisions must always be made by qualified healthcare professionals.</p>
   </div>
 
 </div><!-- /container -->
 
-
 <footer>
-  <p>Academic Project | Lung Cancer Detection using Deep Learning (EfficientNetB0)</p>
+  <p>Academic Project · Lung Cancer Detection using Deep Learning (EfficientNetB0)</p>
 </footer>
 
 
-<!-- ── Chart.js ──────────────────────────────────── -->
+<!-- ════════════════════════════════════════════
+     CHATBOT WIDGET
+════════════════════════════════════════════ -->
+
+<!-- Floating toggle button -->
+<button class="chat-fab" id="chatFab" aria-label="Open medical assistant">
+  <svg class="fab-icon-chat" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  <svg class="fab-icon-close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  <span class="fab-badge" id="fabBadge" style="display:none"></span>
+</button>
+
+<!-- Chat panel -->
+<div class="chat-panel" id="chatPanel" role="dialog" aria-label="Medical AI Assistant">
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <div class="chat-avatar">🤖</div>
+      <div>
+        <p class="chat-title">Medical AI Assistant</p>
+        <p class="chat-subtitle" id="chatSubtitle">
+          {% if result %}
+            Scan loaded · {{ result }} · {{ confidence | round(1) }}% confidence
+          {% else %}
+            Ask me about lung health
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    <div class="chat-header-actions">
+  <button class="chat-action-btn" id="resetChatBtn" title="New conversation">↺</button>
+
+  <button class="chat-action-btn" id="maximizeChatBtn" title="Maximize">⛶</button>
+
+  <button class="chat-action-btn" id="closeChatBtn" title="Close">✕</button>
+</div>
+  </div>
+
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-msg assistant">
+      <div class="msg-bubble">
+        {% if result %}
+          Hi! I've loaded your scan results. I see the AI predicted <strong>{{ result }}</strong> with <strong>{{ confidence | round(1) }}%</strong> confidence.<br><br>
+          I'm here to help you understand what this means. You can ask me things like:<br>
+          <em>• What does {{ result | lower }} mean?</em><br>
+          <em>• What should I do next?</em><br>
+          <em>• How serious is this?</em>
+        {% else %}
+          Hello! I'm your medical AI assistant. Upload a CT scan to get personalised guidance, or ask me general questions about lung health and cancer.
+        {% endif %}
+      </div>
+      <span class="msg-time">now</span>
+    </div>
+  </div>
+
+  <div class="chat-suggestions" id="chatSuggestions">
+    {% if result %}
+      <button class="suggestion-chip" onclick="sendSuggestion(this)">What does {{ result | lower }} mean?</button>
+      <button class="suggestion-chip" onclick="sendSuggestion(this)">What tests should I get?</button>
+      <button class="suggestion-chip" onclick="sendSuggestion(this)">Should I see a specialist?</button>
+      <button class="suggestion-chip" onclick="sendSuggestion(this)">What lifestyle changes help?</button>
+    {% else %}
+      <button class="suggestion-chip" onclick="sendSuggestion(this)">What is lung cancer?</button>
+      <button class="suggestion-chip" onclick="sendSuggestion(this)">What are the symptoms?</button>
+      <button class="suggestion-chip" onclick="sendSuggestion(this)">How is it diagnosed?</button>
+    {% endif %}
+  </div>
+
+  <div class="chat-input-area">
+    <textarea
+      id="chatInput"
+      class="chat-input"
+      placeholder="Ask about your results…"
+      rows="1"
+      aria-label="Type your message"></textarea>
+    <button class="chat-send" id="chatSendBtn" aria-label="Send message">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+
+  <p class="chat-disclaimer">AI assistant — not a substitute for medical advice.</p>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════════ -->
+
 {% if probs %}
 <script>
 (function () {
   const ctx   = document.getElementById('probChart');
   const probs = {{ probs | tojson }};
-
   if (!ctx || !probs) return;
 
-  const colours = {
-    Benign:    { bg: 'rgba(52, 152, 219, 0.7)', border: 'rgba(52, 152, 219, 1)'  },
-    Malignant: { bg: 'rgba(231, 76,  60,  0.7)', border: 'rgba(231, 76,  60,  1)' },
-    Normal:    { bg: 'rgba(46,  204, 113, 0.7)', border: 'rgba(46,  204, 113, 1)' },
+  const COLORS = {
+    bg:     ['rgba(52,152,219,0.75)', 'rgba(231,76,60,0.75)',  'rgba(46,204,113,0.75)'],
+    border: ['rgba(52,152,219,1)',    'rgba(231,76,60,1)',     'rgba(46,204,113,1)'   ],
   };
-  const labels  = ['Benign', 'Malignant', 'Normal'];
-  const bgCols  = labels.map(l => colours[l].bg);
-  const bdrCols = labels.map(l => colours[l].border);
 
   new Chart(ctx, {
     type: 'bar',
     data: {
-      labels,
+      labels: ['Benign', 'Malignant', 'Normal'],
       datasets: [{
-        label: 'Prediction Probability',
+        label: 'Probability',
         data: probs,
-        backgroundColor: bgCols,
-        borderColor: bdrCols,
+        backgroundColor: COLORS.bg,
+        borderColor: COLORS.border,
         borderWidth: 2,
-        borderRadius: 6,
+        borderRadius: 8,
       }]
     },
     options: {
       responsive: true,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => ` ${(ctx.parsed.y * 100).toFixed(1)} %`
-          }
-        }
+        tooltip: { callbacks: { label: c => ` ${(c.parsed.y * 100).toFixed(1)}%` } }
       },
       scales: {
-        y: {
-          beginAtZero: true,
-          max: 1,
-          ticks: {
-            callback: v => (v * 100).toFixed(0) + '%'
-          },
-          title: { display: true, text: 'Probability' }
-        },
-        x: {
-          title: { display: true, text: 'Class' }
-        }
+        y: { beginAtZero: true, max: 1,
+             ticks: { callback: v => (v * 100).toFixed(0) + '%', color: '#8b949e' },
+             grid: { color: '#21262d' },
+             title: { display: true, text: 'Probability', color: '#8b949e' } },
+        x: { ticks: { color: '#8b949e' }, grid: { display: false } }
       }
     }
   });
 }());
 </script>
 {% endif %}
+
+<script>
+// ── Scan context available to the chatbot ─────────────────────────────────
+const SCAN_CONTEXT = {{ chat_context | tojson | safe if chat_context else 'null' }};
+
+// ── Upload preview ────────────────────────────────────────────────────────
+const fileInput   = document.getElementById('fileInput');
+const uploadZone  = document.getElementById('uploadZone');
+const preview     = document.getElementById('uploadPreview');
+const previewImg  = document.getElementById('previewImg');
+const previewName = document.getElementById('previewName');
+
+if (fileInput) {
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    previewImg.src  = url;
+    previewName.textContent = file.name;
+    preview.style.display = 'block';
+    document.querySelector('.upload-content').style.display = 'none';
+  });
+
+  ['dragover','dragenter'].forEach(ev =>
+    uploadZone.addEventListener(ev, e => { e.preventDefault(); uploadZone.classList.add('dragging'); }));
+  ['dragleave','drop'].forEach(ev =>
+    uploadZone.addEventListener(ev, () => uploadZone.classList.remove('dragging')));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    const dt = e.dataTransfer;
+    if (dt.files.length) { fileInput.files = dt.files; fileInput.dispatchEvent(new Event('change')); }
+  });
+  uploadZone.addEventListener('click', e => {
+    if (e.target !== fileInput) fileInput.click();
+  });
+}
+
+// ── Chat widget ───────────────────────────────────────────────────────────
+const chatFab      = document.getElementById('chatFab');
+const chatPanel    = document.getElementById('chatPanel');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput    = document.getElementById('chatInput');
+const chatSendBtn  = document.getElementById('chatSendBtn');
+const closeChatBtn = document.getElementById('closeChatBtn');
+const resetChatBtn = document.getElementById('resetChatBtn');
+const maximizeChatBtn = document.getElementById('maximizeChatBtn');
+const fabBadge     = document.getElementById('fabBadge');
+const suggestions  = document.getElementById('chatSuggestions');
+
+let panelOpen      = false;
+let unreadCount    = 0;
+let isTyping       = false;
+
+function toggleChat(open) {
+  panelOpen = open !== undefined ? open : !panelOpen;
+  chatPanel.classList.toggle('open', panelOpen);
+  chatFab.classList.toggle('active', panelOpen);
+  if (panelOpen) {
+    unreadCount = 0;
+    fabBadge.style.display = 'none';
+    chatInput.focus();
+    scrollToBottom();
+  }
+}
+
+chatFab.addEventListener('click',      () => toggleChat());
+closeChatBtn.addEventListener('click', () => toggleChat(false));
+
+resetChatBtn.addEventListener('click', async () => {
+  await fetch('/chat/reset', { method: 'POST' });
+  chatMessages.innerHTML = '';
+  appendMessage('assistant',
+    'Chat history cleared. How can I help you with your scan results?');
+  suggestions.style.display = 'flex';
+});
+
+// Auto-resize textarea
+chatInput.addEventListener('input', () => {
+  chatInput.style.height = 'auto';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+});
+
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+chatSendBtn.addEventListener('click', sendMessage);
+
+function sendSuggestion(btn) {
+  chatInput.value = btn.textContent;
+  suggestions.style.display = 'none';
+  sendMessage();
+}
+
+function scrollToBottom() {
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function formatTime() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// Simple markdown-ish renderer: bold, italic, bullet lists, line breaks
+function renderMarkdown(text) {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^[•·\-] (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/\n/g, '<br>');
+}
+
+function appendMessage(role, text) {
+  const wrap = document.createElement('div');
+  wrap.className = `chat-msg ${role}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = renderMarkdown(text);
+
+  const time = document.createElement('span');
+  time.className = 'msg-time';
+  time.textContent = formatTime();
+
+  wrap.appendChild(bubble);
+  wrap.appendChild(time);
+  chatMessages.appendChild(wrap);
+  scrollToBottom();
+
+  if (!panelOpen && role === 'assistant') {
+    unreadCount++;
+    fabBadge.textContent = unreadCount;
+    fabBadge.style.display = 'flex';
+  }
+
+  return bubble;
+}
+
+function showTypingIndicator() {
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-msg assistant typing-wrap';
+  wrap.id = 'typingIndicator';
+  wrap.innerHTML = `
+    <div class="msg-bubble typing-bubble">
+      <span></span><span></span><span></span>
+    </div>`;
+  chatMessages.appendChild(wrap);
+  scrollToBottom();
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  const text = chatInput.value.trim();
+  if (!text || isTyping) return;
+
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+  suggestions.style.display = 'none';
+  appendMessage('user', text);
+  suggestions.style.display = "none";
+  showTypingIndicator();
+  isTyping = true;
+  chatSendBtn.disabled = true;
+
+  try {
+    const resp = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, context: SCAN_CONTEXT }),
+    });
+
+    const data = await resp.json();
+    removeTypingIndicator();
+
+    if (data.reply) {
+      appendMessage('assistant', data.reply);
+    } else {
+      appendMessage('assistant',
+        '⚠ Something went wrong. Please try again.');
+    }
+  } catch (err) {
+    removeTypingIndicator();
+    appendMessage('assistant',
+      '⚠ Network error. Please check your connection and try again.');
+  } finally {
+    isTyping = false;
+    chatSendBtn.disabled = false;
+    chatInput.focus();
+  }
+}
+// Scroll chat to bottom on load
+window.addEventListener("load", () => {
+  const chatMessages = document.getElementById("chatMessages");
+  if (chatMessages) {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+});
+
+let chatFullscreen = false;
+
+maximizeChatBtn.addEventListener("click", () => {
+
+  chatFullscreen = !chatFullscreen;
+
+  chatPanel.classList.toggle("fullscreen", chatFullscreen);
+
+  maximizeChatBtn.textContent = chatFullscreen ? "🗗" : "⛶";
+
+});
+</script>
 
 </body>
 </html>

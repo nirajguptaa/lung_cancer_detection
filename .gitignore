@@ -12,3 +12,14 @@ app/static/*.png
 app/static/*.jpg
 app/static/*.jpeg
 app/static/*.webp
+.env
+
+# Ignore generated images
+static/*.png
+static/*.jpg
+static/*.jpeg
+
+# Ignore reports
+static/*.pdf
+
+test_groq.py
