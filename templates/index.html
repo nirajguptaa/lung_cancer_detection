@@ -20,8 +20,57 @@
   </div>
 </header>
 
+
+
 <div class="container">
 
+<div class="card">
+
+<h2>Patient Portal</h2>
+
+<div class="auth-grid">
+
+<div class="auth-box">
+
+<h3>Login</h3>
+
+<form action="/login" method="POST">
+
+<input type="email" name="email" placeholder="Email" required>
+
+<input type="password" name="password" placeholder="Password" required>
+
+<button type="submit">Login</button>
+
+</form>
+
+</div>
+
+
+<div class="auth-box">
+
+<h3>Register</h3>
+
+<form action="/register" method="POST">
+
+<input type="text" name="name" placeholder="Name" required>
+
+<input type="email" name="email" placeholder="Email" required>
+
+<input type="number" name="age" placeholder="Age">
+
+<input type="password" name="password" placeholder="Password" required>
+
+<button type="submit">Register</button>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+</form>
   <!-- ── Upload Card ─────────────────────────────── -->
   <div class="card">
     <h2><span class="card-icon">⬆</span> Patient Information &amp; CT Scan Upload</h2>

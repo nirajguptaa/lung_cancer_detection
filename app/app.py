@@ -6,6 +6,7 @@ Includes:
 • Grad-CAM explainability
 • AI chatbot assistant
 • PDF medical report generation
+• Supabase patient database
 """
 
 import os
@@ -16,13 +17,19 @@ load_dotenv()
 
 import cv2
 import numpy as np
-from flask import Flask, render_template, request, jsonify, session, send_file
+
+from flask import Flask, render_template, request, jsonify, session, send_file, redirect
+
 from tensorflow.keras.applications.efficientnet import preprocess_input
 from tensorflow.keras.models import load_model
+
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from gradcam import generate_gradcam, overlay_heatmap
 from chatbot import chat, build_system_prompt, clear_history
 from report_generator import generate_report
+
+from database import supabase
 
 
 # ──────────────────────────────────────────────
@@ -37,7 +44,7 @@ MODEL_PATH = os.path.join(BASE_DIR, "models", "efficientnet_final.h5")
 
 
 # ──────────────────────────────────────────────
-# Flask app
+# Flask App
 # ──────────────────────────────────────────────
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
@@ -48,7 +55,6 @@ app.secret_key = os.environ.get(
 )
 
 IMG_SIZE = 224
-
 CLASS_NAMES = ["Benign", "Malignant", "Normal"]
 
 
@@ -63,7 +69,7 @@ print("Model loaded successfully")
 
 
 # ──────────────────────────────────────────────
-# Image preprocessing
+# Image Preprocessing
 # ──────────────────────────────────────────────
 
 def preprocess_image(image_path: str) -> np.ndarray:
@@ -139,13 +145,11 @@ def index():
     if request.method != "POST":
         return render_template("index.html", **ctx)
 
-    # Patient info
     ctx["age"] = request.form.get("age")
     ctx["smoking"] = request.form.get("smoking")
     ctx["family_history"] = request.form.get("family_history")
     ctx["symptoms"] = request.form.get("symptoms")
 
-    # Validate file
     if "image" not in request.files or request.files["image"].filename == "":
         return render_template("index.html", **ctx, error="Please upload an image")
 
@@ -154,7 +158,6 @@ def index():
     os.makedirs(STATIC_DIR, exist_ok=True)
 
     filename = str(uuid.uuid4()) + ".png"
-
     image_path = os.path.join(STATIC_DIR, filename)
 
     file.save(image_path)
@@ -166,15 +169,12 @@ def index():
     except Exception:
         return render_template("index.html", **ctx, error="Invalid image file")
 
-    # Prediction
     preds = model.predict(img_array, verbose=0)
 
     probs = preds[0].tolist()
-
     predicted_idx = int(np.argmax(preds))
 
     result = CLASS_NAMES[predicted_idx]
-
     confidence = float(np.max(preds)) * 100
 
     risk_map = {
@@ -192,18 +192,29 @@ def index():
         probs=probs
     )
 
-    # GradCAM
     ctx["heatmap_filename"] = save_gradcam_overlay(
         image_path,
         img_array,
         filename
     )
 
-    # Store filenames for report generation
+    # Save scan to Supabase (only if logged in)
+
+    patient_id = session.get("patient_id")
+
+    if patient_id:
+        supabase.table("scans").insert({
+            "patient_id": patient_id,
+            "prediction": result,
+            "confidence": confidence,
+            "risk": risk,
+            "scan_image": filename,
+            "heatmap_image": ctx["heatmap_filename"]
+        }).execute()
+
     session["uploaded_filename"] = filename
     session["heatmap_filename"] = ctx["heatmap_filename"]
 
-    # Store scan context for chatbot
     session["scan_context"] = {
         "result": result,
         "confidence": confidence,
@@ -214,7 +225,6 @@ def index():
         "symptoms": ctx["symptoms"]
     }
 
-    # Reset chat history
     if "chat_session_id" in session:
         clear_history(session["chat_session_id"])
 
@@ -226,7 +236,7 @@ def index():
 
 
 # ──────────────────────────────────────────────
-# CHATBOT ROUTE
+# CHATBOT
 # ──────────────────────────────────────────────
 
 @app.route("/chat", methods=["POST"])
@@ -263,10 +273,6 @@ def chat_route():
     return jsonify({"reply": reply})
 
 
-# ──────────────────────────────────────────────
-# RESET CHAT
-# ──────────────────────────────────────────────
-
 @app.route("/chat/reset", methods=["POST"])
 def chat_reset():
 
@@ -278,7 +284,7 @@ def chat_reset():
 
 
 # ──────────────────────────────────────────────
-# DOWNLOAD PDF REPORT
+# PDF REPORT
 # ──────────────────────────────────────────────
 
 @app.route("/download_report")
@@ -329,6 +335,79 @@ def download_report():
     generate_report(report_data, output_path)
 
     return send_file(output_path, as_attachment=True)
+
+
+# ──────────────────────────────────────────────
+# REGISTER
+# ──────────────────────────────────────────────
+
+@app.route("/register", methods=["POST"])
+def register():
+
+    name = request.form.get("name")
+    email = request.form.get("email")
+    age = request.form.get("age")
+    password = request.form.get("password")
+
+    password_hash = generate_password_hash(password)
+
+    result = supabase.table("patients").insert({
+        "name": name,
+        "email": email,
+        "age": age,
+        "password": password_hash
+    }).execute()
+
+    patient = result.data[0]
+
+    session["patient_id"] = patient["patient_id"]
+
+    return redirect("/")
+
+
+# ──────────────────────────────────────────────
+# LOGIN
+# ──────────────────────────────────────────────
+
+@app.route("/login", methods=["POST"])
+def login():
+
+    email = request.form.get("email")
+    password = request.form.get("password")
+
+    user = supabase.table("patients")\
+        .select("*")\
+        .eq("email", email)\
+        .execute()
+
+    if user.data and check_password_hash(user.data[0]["password"], password):
+
+        session["patient_id"] = user.data[0]["patient_id"]
+
+        return redirect("/dashboard")
+
+    return "Invalid login"
+
+
+# ──────────────────────────────────────────────
+# DASHBOARD
+# ──────────────────────────────────────────────
+
+@app.route("/dashboard")
+def dashboard():
+
+    patient_id = session.get("patient_id")
+
+    if not patient_id:
+        return redirect("/")
+
+    scans = supabase.table("scans")\
+        .select("*, patients(name)")\
+        .eq("patient_id", patient_id)\
+        .order("created_at", desc=True)\
+        .execute()
+
+    return render_template("dashboard.html", scans=scans.data)
 
 
 # ──────────────────────────────────────────────

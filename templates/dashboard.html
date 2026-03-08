@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Patient Dashboard</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="dashboard-container">
+
+<h1 class="dashboard-title">Patient Scan History</h1>
+
+{% if scans %}
+
+<div class="dashboard-grid">
+
+{% for scan in scans %}
+
+<div class="scan-card">
+
+<div class="scan-images">
+
+{% if scan.scan_image %}
+<img src="{{ url_for('static', filename=scan.scan_image) }}">
+{% endif %}
+
+{% if scan.heatmap_image %}
+<img src="{{ url_for('static', filename=scan.heatmap_image) }}">
+{% endif %}
+
+</div>
+
+<div class="scan-info">
+<div>
+<span class="scan-label">Patient:</span>
+<span class="scan-value">{{ scan.patients.name }}</span>
+</div>
+<div>
+<span class="scan-label">Prediction:</span>
+<span class="scan-value">{{ scan.prediction }}</span>
+</div>
+
+<div>
+<span class="scan-label">Confidence:</span>
+<span class="scan-value">{{ scan.confidence | round(1) }}%</span>
+</div>
+
+<div>
+<span class="scan-label">Risk:</span>
+
+<span class="risk-badge
+{% if scan.risk == 'Low Risk' %}risk-low{% endif %}
+{% if scan.risk == 'Moderate Risk' %}risk-moderate{% endif %}
+{% if scan.risk == 'High Risk' %}risk-high{% endif %}
+">
+
+{{ scan.risk }}
+
+</span>
+
+</div>
+
+{% if scan.created_at %}
+<div class="scan-time">
+
+Added on:
+{{ scan.created_at[:19].replace('T',' ') }}
+
+
+</div>
+{% endif %}
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="dashboard-empty">
+
+<h3>No scans uploaded yet</h3>
+<p>Upload a CT scan to start tracking results.</p>
+
+</div>
+
+{% endif %}
+
+</div>
+
+</body>
+</html>
