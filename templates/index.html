@@ -9,8 +9,67 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ── Login status bar ── */
+    .login-status-bar {
+      background: #161b22;
+      border-bottom: 1px solid #21262d;
+      padding: 8px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+      font-family: 'Sora', sans-serif;
+      font-size: 0.8rem;
+    }
+    .login-status-bar .status-logged-in {
+      color: #3fb950;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .login-status-bar .status-logged-in::before { content: "●"; font-size: 0.5rem; }
+    .login-status-bar a {
+      padding: 5px 14px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.78rem;
+      transition: background 0.2s;
+    }
+    .btn-dashboard { background: #1f6feb; color: #fff; }
+    .btn-dashboard:hover { background: #388bfd; }
+    .btn-logout-sm { background: #21262d; color: #f85149; }
+    .btn-logout-sm:hover { background: #30363d; }
+    .status-not-logged {
+      color: #8b949e;
+    }
+
+    /* ── Scan-not-saved warning ── */
+    .scan-not-saved-notice {
+      background: rgba(210,153,34,0.12);
+      border: 1px solid rgba(210,153,34,0.3);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      color: #d29922;
+      margin-top: 16px;
+      font-family: 'Sora', sans-serif;
+    }
+  </style>
 </head>
 <body>
+
+<!-- ── Login status bar (always visible) ── -->
+<div class="login-status-bar">
+  {% if is_logged_in %}
+    <span class="status-logged-in">Logged in as <strong>{{ patient_name }}</strong></span>
+    <a href="/dashboard" class="btn-dashboard">My Dashboard</a>
+    <a href="/logout"    class="btn-logout-sm">Logout</a>
+  {% else %}
+    <span class="status-not-logged">Not logged in — scans won't be saved</span>
+  {% endif %}
+</div>
 
 <header>
   <div class="header-inner">
@@ -20,58 +79,40 @@
   </div>
 </header>
 
-
-
 <div class="container">
 
-<div class="card">
 
-<h2>Patient Portal</h2>
+  <!-- ── Auth Card ── -->
+  {% if not is_logged_in %}
+  <div class="card">
+    <h2>Patient Portal</h2>
+    <div class="auth-grid">
 
-<div class="auth-grid">
+      <div class="auth-box">
+        <h3>Login</h3>
+        <form action="/login" method="POST">
+          <input type="email"    name="email"    placeholder="Email"    required>
+          <input type="password" name="password" placeholder="Password" required>
+          <button type="submit">Login</button>
+        </form>
+      </div>
 
-<div class="auth-box">
+      <div class="auth-box">
+        <h3>Register</h3>
+        <form action="/register" method="POST">
+          <input type="text"     name="name"     placeholder="Full Name" required>
+          <input type="email"    name="email"    placeholder="Email"     required>
+          <input type="number"   name="age"      placeholder="Age">
+          <input type="password" name="password" placeholder="Password" required>
+          <button type="submit">Register</button>
+        </form>
+      </div>
 
-<h3>Login</h3>
+    </div>
+  </div>
+  {% endif %}
 
-<form action="/login" method="POST">
-
-<input type="email" name="email" placeholder="Email" required>
-
-<input type="password" name="password" placeholder="Password" required>
-
-<button type="submit">Login</button>
-
-</form>
-
-</div>
-
-
-<div class="auth-box">
-
-<h3>Register</h3>
-
-<form action="/register" method="POST">
-
-<input type="text" name="name" placeholder="Name" required>
-
-<input type="email" name="email" placeholder="Email" required>
-
-<input type="number" name="age" placeholder="Age">
-
-<input type="password" name="password" placeholder="Password" required>
-
-<button type="submit">Register</button>
-
-</form>
-
-</div>
-
-</div>
-
-</div>
-</form>
-  <!-- ── Upload Card ─────────────────────────────── -->
+  <!-- ── Upload Card ── -->
   <div class="card">
     <h2><span class="card-icon">⬆</span> Patient Information &amp; CT Scan Upload</h2>
     <form method="POST" enctype="multipart/form-data">
@@ -103,6 +144,23 @@
             <option value="chest_pain" {% if symptoms == 'chest_pain' %}selected{% endif %}>Chest Pain</option>
           </select>
         </div>
+        <!-- Blood Parameters -->
+        <div class="form-group">
+          <label>Hemoglobin (g/dL)</label>
+          <input type="number" step="0.1" name="hemoglobin" placeholder="e.g. 13.5">
+        </div>
+        <div class="form-group">
+          <label>Platelet Count</label>
+          <input type="number" name="platelets" placeholder="e.g. 300000">
+        </div>
+        <div class="form-group">
+          <label>White Blood Cells</label>
+          <input type="number" name="wbc" placeholder="e.g. 8000">
+        </div>
+        <div class="form-group">
+          <label>Red Blood Cells (million/µL)</label>
+          <input type="number" step="0.1" name="rbc" placeholder="e.g. 5.0">
+        </div>
       </div>
 
       <div class="upload-zone" id="uploadZone">
@@ -125,6 +183,12 @@
       </button>
     </form>
 
+    {% if not is_logged_in and result %}
+      <div class="scan-not-saved-notice">
+        ⚠ This scan was <strong>not saved</strong> because you are not logged in. Login or register above to save scan history.
+      </div>
+    {% endif %}
+
     {% if error %}
       <p class="error-msg">⚠ {{ error }}</p>
     {% endif %}
@@ -133,24 +197,37 @@
 
   {% if result %}
 
-  <!-- ── Result Card ──────────────────────────────── -->
+  <!-- ── Result Card ── -->
   <div class="card result-card result-{{ result | lower }}">
     <h2><span class="card-icon">🔬</span> Prediction Result</h2>
     <div class="result-hero">
       <div class="result-label {{ result | lower }}">{{ result }}</div>
       <div class="result-meta">
+
         <div class="meta-pill">
-          <span class="meta-label">Confidence</span>
-          <span class="meta-value">{{ confidence | round(1) }}%</span>
+          <span class="meta-label">CT Scan Result</span>
+          <span class="meta-value">{{ result }} ({{ confidence | round(1) }}%)</span>
         </div>
-        <div class="meta-pill risk-pill {{ risk | lower | replace(' ', '-') }}">
-          <span class="meta-label">Risk Level</span>
+
+        <div class="meta-pill">
+          <span class="meta-label">CT Risk Level</span>
           <span class="meta-value">{{ risk }}</span>
         </div>
+
+        <div class="meta-pill">
+          <span class="meta-label">Blood Model</span>
+          <span class="meta-value">{{ blood_risk }}</span>
+        </div>
+
+        <div class="meta-pill risk-pill {{ final_result | lower | replace(' ', '-') }}">
+          <span class="meta-label">Final Diagnosis</span>
+          <span class="meta-value">{{ final_result }}</span>
+        </div>
+
       </div>
       <a href="/download_report" class="btn-analyse" style="margin-top:20px">
-Download Medical Report (PDF)
-</a>
+        Download Medical Report (PDF)
+      </a>
     </div>
 
     <div class="confidence-bar-wrap">
@@ -176,7 +253,7 @@ Download Medical Report (PDF)
   </div>
 
 
-  <!-- ── Grad-CAM Card ──────────────────────────────── -->
+  <!-- ── Grad-CAM Card ── -->
   <div class="card gradcam-card">
     <h2><span class="card-icon">🧠</span> Model Attention — Grad-CAM Visualisation</h2>
     <div class="scan-grid">
@@ -210,7 +287,7 @@ Download Medical Report (PDF)
   </div>
 
 
-  <!-- ── Probability Chart ───────────────────────── -->
+  <!-- ── Probability Chart ── -->
   <div class="card">
     <h2><span class="card-icon">📊</span> Prediction Probabilities</h2>
     <div class="chart-wrap">
@@ -220,8 +297,7 @@ Download Medical Report (PDF)
 
   {% endif %}
 
-
-  <!-- ── Disclaimer ──────────────────────────────── -->
+  <!-- ── Disclaimer ── -->
   <div class="card disclaimer-card">
     <h3>⚕ Medical Disclaimer</h3>
     <p>This system is developed for academic and research purposes only. It is <strong>not</strong> intended to replace professional medical diagnosis. Final clinical decisions must always be made by qualified healthcare professionals.</p>
@@ -238,14 +314,12 @@ Download Medical Report (PDF)
      CHATBOT WIDGET
 ════════════════════════════════════════════ -->
 
-<!-- Floating toggle button -->
 <button class="chat-fab" id="chatFab" aria-label="Open medical assistant">
   <svg class="fab-icon-chat" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
   <svg class="fab-icon-close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   <span class="fab-badge" id="fabBadge" style="display:none"></span>
 </button>
 
-<!-- Chat panel -->
 <div class="chat-panel" id="chatPanel" role="dialog" aria-label="Medical AI Assistant">
   <div class="chat-header">
     <div class="chat-header-info">
@@ -262,23 +336,21 @@ Download Medical Report (PDF)
       </div>
     </div>
     <div class="chat-header-actions">
-  <button class="chat-action-btn" id="resetChatBtn" title="New conversation">↺</button>
-
-  <button class="chat-action-btn" id="maximizeChatBtn" title="Maximize">⛶</button>
-
-  <button class="chat-action-btn" id="closeChatBtn" title="Close">✕</button>
-</div>
+      <button class="chat-action-btn" id="resetChatBtn"    title="New conversation">↺</button>
+      <button class="chat-action-btn" id="maximizeChatBtn" title="Maximize">⛶</button>
+      <button class="chat-action-btn" id="closeChatBtn"    title="Close">✕</button>
+    </div>
   </div>
 
   <div class="chat-messages" id="chatMessages">
     <div class="chat-msg assistant">
       <div class="msg-bubble">
         {% if result %}
-          Hi! I've loaded your scan results. I see the AI predicted <strong>{{ result }}</strong> with <strong>{{ confidence | round(1) }}%</strong> confidence.<br><br>
-          I'm here to help you understand what this means. You can ask me things like:<br>
+          Hi! I've loaded your scan results. The AI predicted <strong>{{ result }}</strong> with <strong>{{ confidence | round(1) }}%</strong> confidence, and the blood model shows <strong>{{ blood_risk }}</strong>. Final diagnosis: <strong>{{ final_result }}</strong>.<br><br>
+          You can ask me:<br>
           <em>• What does {{ result | lower }} mean?</em><br>
           <em>• What should I do next?</em><br>
-          <em>• How serious is this?</em>
+          <em>• How serious is {{ final_result | lower }}?</em>
         {% else %}
           Hello! I'm your medical AI assistant. Upload a CT scan to get personalised guidance, or ask me general questions about lung health and cancer.
         {% endif %}
@@ -311,14 +383,11 @@ Download Medical Report (PDF)
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </button>
   </div>
-
   <p class="chat-disclaimer">AI assistant — not a substitute for medical advice.</p>
 </div>
 
 
-<!-- ════════════════════════════════════════════
-     SCRIPTS
-════════════════════════════════════════════ -->
+<!-- ════════ SCRIPTS ════════ -->
 
 {% if probs %}
 <script>
@@ -365,7 +434,6 @@ Download Medical Report (PDF)
 {% endif %}
 
 <script>
-// ── Scan context available to the chatbot ─────────────────────────────────
 const SCAN_CONTEXT = {{ chat_context | tojson | safe if chat_context else 'null' }};
 
 // ── Upload preview ────────────────────────────────────────────────────────
@@ -379,8 +447,7 @@ if (fileInput) {
   fileInput.addEventListener('change', () => {
     const file = fileInput.files[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    previewImg.src  = url;
+    previewImg.src  = URL.createObjectURL(file);
     previewName.textContent = file.name;
     preview.style.display = 'block';
     document.querySelector('.upload-content').style.display = 'none';
@@ -401,20 +468,20 @@ if (fileInput) {
 }
 
 // ── Chat widget ───────────────────────────────────────────────────────────
-const chatFab      = document.getElementById('chatFab');
-const chatPanel    = document.getElementById('chatPanel');
-const chatMessages = document.getElementById('chatMessages');
-const chatInput    = document.getElementById('chatInput');
-const chatSendBtn  = document.getElementById('chatSendBtn');
-const closeChatBtn = document.getElementById('closeChatBtn');
-const resetChatBtn = document.getElementById('resetChatBtn');
+const chatFab         = document.getElementById('chatFab');
+const chatPanel       = document.getElementById('chatPanel');
+const chatMessages    = document.getElementById('chatMessages');
+const chatInput       = document.getElementById('chatInput');
+const chatSendBtn     = document.getElementById('chatSendBtn');
+const closeChatBtn    = document.getElementById('closeChatBtn');
+const resetChatBtn    = document.getElementById('resetChatBtn');
 const maximizeChatBtn = document.getElementById('maximizeChatBtn');
-const fabBadge     = document.getElementById('fabBadge');
-const suggestions  = document.getElementById('chatSuggestions');
+const fabBadge        = document.getElementById('fabBadge');
+const suggestions     = document.getElementById('chatSuggestions');
 
-let panelOpen      = false;
-let unreadCount    = 0;
-let isTyping       = false;
+let panelOpen   = false;
+let unreadCount = 0;
+let isTyping    = false;
 
 function toggleChat(open) {
   panelOpen = open !== undefined ? open : !panelOpen;
@@ -434,17 +501,14 @@ closeChatBtn.addEventListener('click', () => toggleChat(false));
 resetChatBtn.addEventListener('click', async () => {
   await fetch('/chat/reset', { method: 'POST' });
   chatMessages.innerHTML = '';
-  appendMessage('assistant',
-    'Chat history cleared. How can I help you with your scan results?');
+  appendMessage('assistant', 'Chat history cleared. How can I help you?');
   suggestions.style.display = 'flex';
 });
 
-// Auto-resize textarea
 chatInput.addEventListener('input', () => {
   chatInput.style.height = 'auto';
   chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
 });
-
 chatInput.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
@@ -455,64 +519,47 @@ function sendSuggestion(btn) {
   suggestions.style.display = 'none';
   sendMessage();
 }
+function scrollToBottom() { chatMessages.scrollTop = chatMessages.scrollHeight; }
+function formatTime() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 
-function scrollToBottom() {
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function formatTime() {
-  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-// Simple markdown-ish renderer: bold, italic, bullet lists, line breaks
 function renderMarkdown(text) {
   return text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/^[•·\-] (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-    .replace(/\n/g, '<br>');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^[•·\-] (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs,'<ul>$1</ul>')
+    .replace(/\n/g,'<br>');
 }
 
 function appendMessage(role, text) {
-  const wrap = document.createElement('div');
+  const wrap   = document.createElement('div');
   wrap.className = `chat-msg ${role}`;
-
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
   bubble.innerHTML = renderMarkdown(text);
-
   const time = document.createElement('span');
   time.className = 'msg-time';
   time.textContent = formatTime();
-
   wrap.appendChild(bubble);
   wrap.appendChild(time);
   chatMessages.appendChild(wrap);
   scrollToBottom();
-
   if (!panelOpen && role === 'assistant') {
     unreadCount++;
     fabBadge.textContent = unreadCount;
     fabBadge.style.display = 'flex';
   }
-
-  return bubble;
 }
 
 function showTypingIndicator() {
   const wrap = document.createElement('div');
   wrap.className = 'chat-msg assistant typing-wrap';
   wrap.id = 'typingIndicator';
-  wrap.innerHTML = `
-    <div class="msg-bubble typing-bubble">
-      <span></span><span></span><span></span>
-    </div>`;
+  wrap.innerHTML = `<div class="msg-bubble typing-bubble"><span></span><span></span><span></span></div>`;
   chatMessages.appendChild(wrap);
   scrollToBottom();
 }
-
 function removeTypingIndicator() {
   const el = document.getElementById('typingIndicator');
   if (el) el.remove();
@@ -526,7 +573,6 @@ async function sendMessage() {
   chatInput.style.height = 'auto';
   suggestions.style.display = 'none';
   appendMessage('user', text);
-  suggestions.style.display = "none";
   showTypingIndicator();
   isTyping = true;
   chatSendBtn.disabled = true;
@@ -537,44 +583,28 @@ async function sendMessage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text, context: SCAN_CONTEXT }),
     });
-
     const data = await resp.json();
     removeTypingIndicator();
-
-    if (data.reply) {
-      appendMessage('assistant', data.reply);
-    } else {
-      appendMessage('assistant',
-        '⚠ Something went wrong. Please try again.');
-    }
-  } catch (err) {
+    appendMessage('assistant', data.reply || '⚠ Something went wrong. Please try again.');
+  } catch {
     removeTypingIndicator();
-    appendMessage('assistant',
-      '⚠ Network error. Please check your connection and try again.');
+    appendMessage('assistant', '⚠ Network error. Please check your connection.');
   } finally {
     isTyping = false;
     chatSendBtn.disabled = false;
     chatInput.focus();
   }
 }
-// Scroll chat to bottom on load
+
 window.addEventListener("load", () => {
-  const chatMessages = document.getElementById("chatMessages");
-  if (chatMessages) {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
+  if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
 });
 
 let chatFullscreen = false;
-
 maximizeChatBtn.addEventListener("click", () => {
-
   chatFullscreen = !chatFullscreen;
-
   chatPanel.classList.toggle("fullscreen", chatFullscreen);
-
   maximizeChatBtn.textContent = chatFullscreen ? "🗗" : "⛶";
-
 });
 </script>
 

@@ -1,99 +1,325 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Dashboard · Lung Cancer Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-<title>Patient Dashboard</title>
+    body {
+      font-family: 'Sora', sans-serif;
+      background: #090d13;
+      color: #d8e4f0;
+      min-height: 100vh;
+    }
 
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    /* NAV */
+    .topnav {
+      background: #111720;
+      border-bottom: 1px solid #1e2d40;
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .topnav-brand { font-size: 1rem; font-weight: 700; color: #e6edf3; display: flex; align-items: center; gap: 8px; }
+    .topnav-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .welcome { font-size: 0.8rem; color: #5e7a96; }
+    .welcome strong { color: #58a6ff; }
+    .btn {
+      padding: 7px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+      text-decoration: none; border: none; cursor: pointer; font-family: 'Sora', sans-serif; transition: all 0.2s;
+    }
+    .btn-blue   { background: #1f6feb; color: #fff; }
+    .btn-blue:hover { background: #388bfd; }
+    .btn-red    { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+    .btn-red:hover  { background: rgba(239,68,68,0.22); }
 
+    /* PAGE */
+    .page { max-width: 1200px; margin: 0 auto; padding: 36px 24px 80px; }
+
+    /* STATS */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .stat { background: #111720; border: 1px solid #1e2d40; border-radius: 12px; padding: 18px 14px; text-align: center; }
+    .stat-n { display: block; font-family: 'DM Mono', monospace; font-size: 1.9rem; font-weight: 500; color: #3b82f6; line-height: 1; }
+    .stat-l { display: block; font-size: 0.68rem; color: #5e7a96; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.07em; }
+
+    /* SECTION */
+    .sec-head {
+      font-size: 0.95rem; font-weight: 600; color: #e6edf3; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .sec-head::after { content: ''; flex: 1; height: 1px; background: #1e2d40; }
+
+    /* GRID */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 20px; }
+
+    /* CARD */
+    .sc {
+      background: #111720; border: 1px solid #1e2d40; border-radius: 16px;
+      overflow: hidden; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .sc:hover { transform: translateY(-3px); box-shadow: 0 10px 36px rgba(0,0,0,0.5); border-color: #253448; }
+
+    /* Images */
+    .sc-imgs { display: grid; grid-template-columns: 1fr 1fr; background: #050810; }
+    .sc-img-col { display: flex; flex-direction: column; }
+    .sc-img-col img { width: 100%; height: 130px; object-fit: cover; display: block; }
+    .sc-img-col:only-child img { height: 155px; }
+    .sc-img-lbl {
+      font-family: 'DM Mono', monospace; font-size: 0.6rem; color: #3d546b;
+      text-align: center; padding: 3px 0 5px; background: #050810; letter-spacing: 0.06em;
+    }
+    .sc-no-img {
+      grid-column: 1/-1; height: 56px; display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: #3d546b; font-family: 'DM Mono', monospace;
+    }
+
+    /* Body */
+    .sc-body { padding: 16px; }
+    .sc-name { font-size: 0.9rem; font-weight: 700; color: #e6edf3; margin-bottom: 14px; }
+
+    /* Fields */
+    .flds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .fld { background: #090d13; border: 1px solid #1e2d40; border-radius: 9px; padding: 9px 11px; }
+    .fld-l {
+      display: block; font-family: 'DM Mono', monospace; font-size: 0.58rem;
+      text-transform: uppercase; letter-spacing: 0.09em; color: #5e7a96; margin-bottom: 5px;
+    }
+    .fld-v { font-size: 0.83rem; font-weight: 600; color: #c9d1d9; }
+
+    /* Chips */
+    .chip {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 0.7rem; font-weight: 700; font-family: 'DM Mono', monospace;
+    }
+    .c-high { background: rgba(239,68,68,0.15);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .c-mod  { background: rgba(234,179,8,0.15);  color: #eab308; border: 1px solid rgba(234,179,8,0.3); }
+    .c-low  { background: rgba(34,197,94,0.15);  color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+    .c-na   { background: rgba(94,122,150,0.12); color: #5e7a96; border: 1px solid rgba(94,122,150,0.25); }
+
+    /* Confidence */
+    .conf-bar-wrap { height: 4px; background: #1e2d40; border-radius: 4px; overflow: hidden; margin: 10px 0 5px; }
+    .conf-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+    .conf-txt { font-family: 'DM Mono', monospace; font-size: 0.66rem; color: #5e7a96; text-align: right; }
+
+    /* Timestamp */
+    .sc-ts {
+      margin-top: 12px; padding-top: 10px; border-top: 1px solid #1e2d40;
+      font-family: 'DM Mono', monospace; font-size: 0.65rem; color: #3d546b;
+    }
+
+    /* Empty */
+    .empty {
+      text-align: center; padding: 80px 32px; background: #111720;
+      border: 1px dashed #1e2d40; border-radius: 16px;
+    }
+    .empty-ico { font-size: 3rem; margin-bottom: 16px; }
+    .empty h3 { color: #5e7a96; font-size: 1.05rem; margin-bottom: 8px; }
+    .empty p  { color: #3d546b; font-size: 0.83rem; line-height: 1.6; }
+    .empty a  {
+      display: inline-block; margin-top: 20px; padding: 10px 24px;
+      background: #1f6feb; color: #fff; border-radius: 8px; text-decoration: none;
+      font-weight: 600; font-size: 0.85rem;
+    }
+
+    @media (max-width: 600px) {
+      .topnav { padding: 12px 16px; }
+      .grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="dashboard-container">
+<nav class="topnav">
+  <div class="topnav-brand">🫁 Lung Cancer Detection</div>
+  <div class="topnav-right">
+    <span class="welcome">Logged in as <strong>{{ patient_name or "Patient" }}</strong></span>
+    <a href="/"       class="btn btn-blue">← Upload Scan</a>
+    <a href="/logout" class="btn btn-red">Logout</a>
+  </div>
+</nav>
 
-<h1 class="dashboard-title">Patient Scan History</h1>
+<div class="page">
 
-{% if scans %}
+  {% if scans %}
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-n">{{ scans | length }}</span>
+      <span class="stat-l">Total Scans</span>
+    </div>
+    <div class="stat">
+      <span class="stat-n" style="color:#ef4444">{{ scans | selectattr('prediction','equalto','Malignant') | list | length }}</span>
+      <span class="stat-l">Malignant</span>
+    </div>
+    <div class="stat">
+      <span class="stat-n" style="color:#eab308">{{ scans | selectattr('prediction','equalto','Benign') | list | length }}</span>
+      <span class="stat-l">Benign</span>
+    </div>
+    <div class="stat">
+      <span class="stat-n" style="color:#22c55e">{{ scans | selectattr('prediction','equalto','Normal') | list | length }}</span>
+      <span class="stat-l">Normal</span>
+    </div>
+    <div class="stat">
+      <span class="stat-n" style="color:#ef4444">{{ scans | selectattr('final_result','equalto','High Risk') | list | length }}</span>
+      <span class="stat-l">High Risk Final</span>
+    </div>
+  </div>
+  {% endif %}
 
-<div class="dashboard-grid">
+  <div class="sec-head">📋 Scan History</div>
 
-{% for scan in scans %}
+  {% if scans %}
+  <div class="grid">
+    {% for scan in scans %}
+    <div class="sc">
 
-<div class="scan-card">
+      <!-- Images -->
+      <div class="sc-imgs">
+        {% if scan.scan_image %}
+        <div class="sc-img-col">
+          <img src="{{ url_for('static', filename=scan.scan_image) }}" alt="CT Scan">
+          <span class="sc-img-lbl">CT SCAN</span>
+        </div>
+        {% endif %}
+        {% if scan.heatmap_image %}
+        <div class="sc-img-col">
+          <img src="{{ url_for('static', filename=scan.heatmap_image) }}" alt="Grad-CAM">
+          <span class="sc-img-lbl">GRAD-CAM</span>
+        </div>
+        {% endif %}
+        {% if not scan.scan_image and not scan.heatmap_image %}
+          <div class="sc-no-img">No images stored</div>
+        {% endif %}
+      </div>
 
-<div class="scan-images">
+      <!-- Body -->
+      <div class="sc-body">
+        <div style="font-size:0.65rem; color:#22c55e; margin-bottom:6px;">
+          ✔ Multi-Modal AI Analysis (CT + Blood)
+        </div>
 
-{% if scan.scan_image %}
-<img src="{{ url_for('static', filename=scan.scan_image) }}">
-{% endif %}
+        <div class="sc-name">👤 {{ scan.patient_name or "Unknown Patient" }}</div>
 
-{% if scan.heatmap_image %}
-<img src="{{ url_for('static', filename=scan.heatmap_image) }}">
-{% endif %}
+        <div class="flds">
+
+          <!-- CT Prediction -->
+          <div class="fld">
+            <span class="fld-l">CT Prediction</span>
+            <span class="fld-v">{{ scan.prediction or "—" }}</span>
+          </div>
+
+          <!-- CT Risk -->
+          <div class="fld">
+            <span class="fld-l">CT Risk</span>
+            <span class="fld-v">
+              {% if scan.risk == 'High Risk' %}<span class="chip c-high">High Risk</span>
+              {% elif scan.risk == 'Moderate Risk' %}<span class="chip c-mod">Moderate</span>
+              {% elif scan.risk == 'Low Risk' %}<span class="chip c-low">Low Risk</span>
+              {% else %}<span class="chip c-na">—</span>{% endif %}
+            </span>
+          </div>
+
+          <!-- Blood Risk -->
+          <div class="fld">
+            <span class="fld-l">🩸 Blood Risk</span>
+            <span class="fld-v">
+              {% set br = scan.blood_risk %}
+              {% if br == 'High Risk' %}<span class="chip c-high">High Risk</span>
+              {% elif br == 'Low Risk' %}<span class="chip c-low">Low Risk</span>
+              {% else %}<span class="chip c-na">{{ br or "N/A" }}</span>{% endif %}
+            </span>
+          </div>
+
+          <!-- Final Diagnosis -->
+          <div class="fld">
+            <span class="fld-l">🎯 Final Diagnosis</span>
+            <span class="fld-v">
+              {% set fr = scan.final_result %}
+              {% if fr == 'High Risk' %}<span class="chip c-high">High Risk</span>
+              {% elif fr == 'Moderate Risk' %}<span class="chip c-mod">Moderate</span>
+              {% elif fr == 'Low Risk' %}<span class="chip c-low">Low Risk</span>
+              {% else %}<span class="chip c-na">{{ fr or "N/A" }}</span>{% endif %}
+            </span>
+          </div>
+
+          <!-- Final Result (Explicit Column) -->
+          <div class="fld">
+            <span class="fld-l">📊 Final Result</span>
+            <span class="fld-v" style="font-weight:700; color:#58a6ff;">
+              {{ scan.final_result or "N/A" }}
+            </span>
+          </div>
+
+        </div>
+
+        <!-- Confidence bar -->
+        {% if scan.confidence %}
+        <div class="conf-bar-wrap">
+          <div class="conf-bar" style="width:{{ [scan.confidence|float, 100]|min|round }}%"></div>
+        </div>
+        <div class="conf-txt">Confidence: {{ scan.confidence | round(1) }}%</div>
+        {% endif %}
+
+        <div style="margin-top:6px; font-size:0.7rem; color:#8b949e;">
+          CT Confidence vs Blood Contribution
+        </div>
+        <div style="display:flex; height:6px; border-radius:6px; overflow:hidden; margin-top:4px;">
+          <div style="width:70%; background:#3b82f6;"></div>
+          <div style="width:30%; background:#22c55e;"></div>
+        </div>
+
+        <div style="margin-top:12px; padding:10px; background:#0d1117; border:1px solid #1e2d40; border-radius:8px;">
+          <span style="font-size:0.7rem; color:#58a6ff; font-weight:600;">AI Fusion Logic</span>
+          <p style="font-size:0.75rem; color:#8b949e; margin-top:5px;">
+            CT Scan predicted <strong>{{ scan.prediction }}</strong> with {{ scan.confidence | round(1) }}% confidence.
+            Blood analysis indicates <strong>{{ scan.blood_risk }}</strong>.
+            Final diagnosis is derived by combining imaging and hematological indicators.
+          </p>
+        </div>
+
+        <div style="margin-top:8px; font-size:0.7rem; color:#9ca3af;">
+          {% if scan.final_result == 'High Risk' %}
+            ⚠ High risk due to strong indicators in CT scan or abnormal blood values.
+          {% elif scan.final_result == 'Moderate Risk' %}
+            ⚠ Moderate risk due to partial abnormality detected.
+          {% else %}
+            ✅ Low risk as both CT and blood indicators are normal.
+          {% endif %}
+        </div>
+
+        <!-- Timestamp -->
+        <div class="sc-ts">🕐 {{ scan.created_at_display or "—" }}</div>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty">
+    <div class="empty-ico">🫁</div>
+    <h3>No scans found</h3>
+    <p>
+      Make sure you are <strong>logged in before</strong> uploading a scan.<br>
+      Scans uploaded while not logged in are not saved to your history.
+    </p>
+    <a href="/">Upload a Scan</a>
+  </div>
+  {% endif %}
 
 </div>
-
-<div class="scan-info">
-<div>
-<span class="scan-label">Patient:</span>
-<span class="scan-value">{{ scan.patients.name }}</span>
-</div>
-<div>
-<span class="scan-label">Prediction:</span>
-<span class="scan-value">{{ scan.prediction }}</span>
-</div>
-
-<div>
-<span class="scan-label">Confidence:</span>
-<span class="scan-value">{{ scan.confidence | round(1) }}%</span>
-</div>
-
-<div>
-<span class="scan-label">Risk:</span>
-
-<span class="risk-badge
-{% if scan.risk == 'Low Risk' %}risk-low{% endif %}
-{% if scan.risk == 'Moderate Risk' %}risk-moderate{% endif %}
-{% if scan.risk == 'High Risk' %}risk-high{% endif %}
-">
-
-{{ scan.risk }}
-
-</span>
-
-</div>
-
-{% if scan.created_at %}
-<div class="scan-time">
-
-Added on:
-{{ scan.created_at[:19].replace('T',' ') }}
-
-
-</div>
-{% endif %}
-
-</div>
-
-</div>
-
-{% endfor %}
-
-</div>
-
-{% else %}
-
-<div class="dashboard-empty">
-
-<h3>No scans uploaded yet</h3>
-<p>Upload a CT scan to start tracking results.</p>
-
-</div>
-
-{% endif %}
-
-</div>
-
 </body>
 </html>
