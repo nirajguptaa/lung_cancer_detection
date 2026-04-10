@@ -10,7 +10,7 @@ It combines:
 
 ---
 
-##  Project Idea (Simple Explanation)
+##  Project Idea 
 
 This system helps in **early detection of lung cancer** by analyzing:
 
@@ -144,21 +144,17 @@ lung-cancer-detection
 │   ├── database.py
 │   ├── gradcam.py
 │   └── report_generator.py
-
 ├── templates
 │   ├── index.html
 │   └── dashboard.html
-
 ├── static
 │   ├── style.css
 │   ├── images
 │   └── heatmaps
-
 ├── models
 │   ├── efficientnet_final.h5
 │   ├── blood_model.pkl
 │   └── scaler.pkl
-
 ├── requirements.txt
 └── README.md
 ```
@@ -197,21 +193,25 @@ http://127.0.0.1:5001
 ---
 
 
+---
+
 ##  Screenshots
 
-###  Home Page (Upload UI)
+###  Home Page 
 ![Home](./screenshots/home.jpeg)
 
 ###  Prediction Result (CT + Blood + Final)
 ![Result](./screenshots/result.jpeg)
 
+###  Grad-CAM Visualization
+![Grad-CAM](./screenshots/gradcam.jpeg)
 
 ###  Dashboard (History View)
 ![Dashboard](./screenshots/dashboard.jpeg)
 
 ---
-```
 
 ---
+```
 
 
