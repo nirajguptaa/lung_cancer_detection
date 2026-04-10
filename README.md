@@ -10,7 +10,7 @@ It combines:
 
 ---
 
-## 🚀 Project Idea (Simple Explanation)
+##  Project Idea (Simple Explanation)
 
 This system helps in **early detection of lung cancer** by analyzing:
 
@@ -21,7 +21,7 @@ Then it **combines both results** to give a **final risk prediction**.
 
 ---
 
-## 🧠 How the System Works
+##  How the System Works
 
 ### Step 1: CT Scan Model
 - User uploads CT scan image
@@ -58,29 +58,29 @@ This makes the system closer to real-world diagnosis.
 
 ---
 
-## 🎯 Key Features
+##  Key Features
 
-### ✅ CT Scan Prediction
+###  CT Scan Prediction
 Deep learning model (EfficientNetB0) detects lung abnormalities.
 
 ---
 
-### ✅ Blood-Based Risk Prediction
+###  Blood-Based Risk Prediction
 Machine learning model uses blood values to estimate risk.
 
 ---
 
-### ✅ Final Combined Diagnosis
+###  Final Combined Diagnosis
 Combines CT + blood results for better prediction.
 
 ---
 
-### ✅ Grad-CAM (Explainable AI)
+###  Grad-CAM (Explainable AI)
 Shows where the model is focusing in the CT scan.
 
 ---
 
-### ✅ Patient Dashboard
+###  Patient Dashboard
 - Stores scan history
 - Shows:
   - CT Result
@@ -90,7 +90,7 @@ Shows where the model is focusing in the CT scan.
 
 ---
 
-### ✅ PDF Report
+###  PDF Report
 Download complete medical-style report with:
 - Patient data
 - Results
@@ -99,14 +99,14 @@ Download complete medical-style report with:
 
 ---
 
-### ✅ AI Chatbot
+###  AI Chatbot
 - Explains results
 - Suggests next steps
 - Helps users understand predictions
 
 ---
 
-## 🛠️ Technologies Used
+##  Technologies Used
 
 ### Machine Learning
 - TensorFlow
@@ -165,10 +165,10 @@ lung-cancer-detection
 
 ---
 
-## ⚙️ How to Run
+##  How to Run
 
 ```bash
-git clone <your-repo-link>
+git clone https://github.com/nirajguptaa/lung_cancer_detection
 cd lung-cancer-detection
 python -m venv venv
 source venv/bin/activate   # Mac/Linux
@@ -183,7 +183,7 @@ http://127.0.0.1:5001
 
 ---
 
-## 📊 Model Details
+##  Model Details
 
 ### CT Model
 - EfficientNetB0
@@ -196,23 +196,20 @@ http://127.0.0.1:5001
 
 ---
 
-## 📸 Screenshots 
 
-Add these images for better presentation:
+##  Screenshots
 
-- Home Page (upload UI)
-- Prediction Result (CT + Blood + Final)
-- Grad-CAM visualization
-- Dashboard (history view)
+###  Home Page (Upload UI)
+![Home](./screenshots/home.jpeg)
 
-Example:
+###  Prediction Result (CT + Blood + Final)
+![Result](./screenshots/result.jpeg)
 
-```
-## Screenshots
 
-![Home](screenshots/home.jpeg)
-![Result](screenshots/result.jpeg)
-![Dashboard](screenshots/dashboard.jpeg)
+###  Dashboard (History View)
+![Dashboard](./screenshots/dashboard.jpeg)
+
+---
 ```
 
 ---
