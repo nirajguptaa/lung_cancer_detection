@@ -1,314 +1,220 @@
-
-
 # AI-Powered Lung Cancer Detection System
 
-An AI-powered web platform for detecting lung cancer from CT scan images using **Deep Learning (EfficientNetB0)**, **Explainable AI (Grad-CAM)**, and an **AI Medical Assistant**. The system also generates **PDF medical reports** and maintains **patient scan history** using a Supabase database.
+A web-based AI system for detecting lung cancer using **CT scan images + blood test data**.
+
+It combines:
+- Deep Learning (EfficientNetB0)
+- Machine Learning (Blood Analysis Model)
+- Explainable AI (Grad-CAM)
+- Patient Dashboard & Reports
 
 ---
 
-## Project Overview
+## 🚀 Project Idea (Simple Explanation)
 
-Lung cancer is one of the leading causes of cancer-related deaths worldwide. Early detection significantly improves survival rates. This project demonstrates how Artificial Intelligence can assist healthcare professionals by analyzing CT scan images and providing explainable predictions.
+This system helps in **early detection of lung cancer** by analyzing:
 
-The platform allows users to:
+1. **CT Scan Image (primary diagnosis)**
+2. **Blood parameters (supporting diagnosis)**
 
-- Upload CT scan images
-- Detect lung abnormalities using a deep learning model
-- Visualize model attention using Grad-CAM
-- Interact with an AI assistant to understand results
-- Generate automated medical reports
-- Track scan history through a patient dashboard
+Then it **combines both results** to give a **final risk prediction**.
 
 ---
 
-## Key Features
+## 🧠 How the System Works
 
-### AI-Based Lung Cancer Detection
-A deep learning model analyzes CT scan images and predicts whether the scan belongs to one of three categories:
-
-- Normal
-- Benign
-- Malignant
-
-The system provides prediction confidence to help interpret model reliability.
-
----
-
-### Explainable AI (Grad-CAM)
-Grad-CAM visualization highlights the regions of the CT scan that influenced the model's prediction. This improves transparency and helps verify that the model focuses on medically relevant lung regions.
+### Step 1: CT Scan Model
+- User uploads CT scan image
+- Model predicts:
+  - Normal
+  - Benign
+  - Malignant
+- Also gives confidence %
 
 ---
 
-### AI Medical Assistant
-The platform integrates a chatbot powered by the **Groq LLM API**. The assistant can:
+### Step 2: Blood Analysis Model
+User enters:
+- Hemoglobin  
+- Platelets  
+- White Blood Cells (WBC)  
+- Red Blood Cells (RBC)
 
-- Explain prediction results
-- Provide medical guidance
-- Suggest next diagnostic steps
-
-⚠️ The assistant provides informational guidance only and does not replace professional medical diagnosis.
-
----
-
-### Automated PDF Medical Reports
-Users can generate structured medical reports containing:
-
-- Patient information
-- Prediction results
-- Confidence scores
-- Risk assessment
-- Grad-CAM visualizations
-
-These reports can be downloaded and shared with healthcare professionals.
+Model predicts:
+- Low Risk  
+- High Risk  
 
 ---
 
-### Patient Dashboard & Scan History
-Using **Supabase database**, the system stores patient data and scan results.
+### Step 3: Final Decision (Fusion Logic)
 
-The dashboard allows patients to:
+We combine both results:
 
-- View previous scans
-- Track prediction history
-- Download reports
+- If CT = Malignant OR Blood = High Risk → **High Risk**
+- If CT = Benign → **Moderate Risk**
+- Else → **Low Risk**
 
----
-
-## System Architecture
-
-User
-
-↓
-
-Web Interface (HTML / CSS / JavaScript)
-
-↓
-
-Flask Backend
-
-↓
-
-• Image Preprocessing
-• EfficientNetB0 Deep Learning Model
-• Grad-CAM Explainability
-• AI Chatbot (Groq API)
-• PDF Report Generator
-
-↓
-
-Supabase Database
-
-• Patients Table
-• Scans Table
+This makes the system closer to real-world diagnosis.
 
 ---
 
-## Technologies Used
+## 🎯 Key Features
+
+### ✅ CT Scan Prediction
+Deep learning model (EfficientNetB0) detects lung abnormalities.
+
+---
+
+### ✅ Blood-Based Risk Prediction
+Machine learning model uses blood values to estimate risk.
+
+---
+
+### ✅ Final Combined Diagnosis
+Combines CT + blood results for better prediction.
+
+---
+
+### ✅ Grad-CAM (Explainable AI)
+Shows where the model is focusing in the CT scan.
+
+---
+
+### ✅ Patient Dashboard
+- Stores scan history
+- Shows:
+  - CT Result
+  - Blood Risk
+  - Final Diagnosis
+  - Confidence
+
+---
+
+### ✅ PDF Report
+Download complete medical-style report with:
+- Patient data
+- Results
+- Images
+- Final diagnosis
+
+---
+
+### ✅ AI Chatbot
+- Explains results
+- Suggests next steps
+- Helps users understand predictions
+
+---
+
+## 🛠️ Technologies Used
 
 ### Machine Learning
 - TensorFlow
-- Keras
-- EfficientNetB0
-- Grad-CAM
+- EfficientNetB0  
+- XGBoost (Blood model)  
+- Scikit-learn  
 
 ### Backend
-- Python
-- Flask
+- Python  
+- Flask  
 
 ### Database
-- Supabase
-
-### AI Integration
-- Groq API
+- Supabase  
 
 ### Frontend
-- HTML
-- CSS
-- JavaScript
-- Chart.js
+- HTML  
+- CSS  
+- JavaScript  
+- Chart.js  
 
-### Report Generation
-- ReportLab
+### Others
+- Grad-CAM  
+- ReportLab  
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
+```
 lung-cancer-detection
 
-│
-
 ├── app
-
 │   ├── app.py
-
 │   ├── chatbot.py
-
 │   ├── database.py
-
 │   ├── gradcam.py
-
 │   └── report_generator.py
 
-│
-
 ├── templates
-
 │   ├── index.html
-
 │   └── dashboard.html
 
-│
-
 ├── static
-
 │   ├── style.css
-
-│   ├── uploaded images
-
+│   ├── images
 │   └── heatmaps
 
-│
-
 ├── models
-
-│   └── efficientnet_final.h5
-
-│
+│   ├── efficientnet_final.h5
+│   ├── blood_model.pkl
+│   └── scaler.pkl
 
 ├── requirements.txt
-
 └── README.md
+```
 
 ---
 
-## Installation
+## ⚙️ How to Run
 
-Clone the repository
-
-```
-git clone https://github.com/yourusername/lung-cancer-detection.git
-```
-
-Navigate to project directory
-
-```
+```bash
+git clone <your-repo-link>
 cd lung-cancer-detection
-```
-
-Create virtual environment
-
-```
 python -m venv venv
-```
-
-Activate environment
-
-Mac / Linux
-
-```
-source venv/bin/activate
-```
-
-Windows
-
-```
-venv\\Scripts\\activate
-```
-
-Install dependencies
-
-```
+source venv/bin/activate   # Mac/Linux
 pip install -r requirements.txt
-```
-
----
-
-## Environment Variables
-
-Create a `.env` file in the root directory and add the following:
-
-```
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_KEY=your_supabase_api_key
-GROQ_API_KEY=your_groq_api_key
-FLASK_SECRET_KEY=your_secret_key
-```
-
----
-
-## Running the Application
-
-Start the Flask server:
-
-```
 python app.py
 ```
 
-Open the application in your browser:
-
+Open:
 ```
 http://127.0.0.1:5001
 ```
 
 ---
 
-## Model Details
+## 📊 Model Details
 
-The system uses **EfficientNetB0**, a convolutional neural network architecture optimized for high performance with fewer parameters.
-
-Key techniques used:
-
+### CT Model
+- EfficientNetB0
 - Transfer Learning
-- Fine-tuning
-- Image preprocessing
-- Grad-CAM explainability
+- Image size: 224x224
+
+### Blood Model
+- Trained on blood parameters
+- Handles class imbalance
 
 ---
 
-## Model Evaluation
+## 📸 Screenshots 
 
-Typical evaluation metrics include:
+Add these images for better presentation:
 
-- Accuracy
-- Precision
-- Recall
-- F1 Score
-- Confusion Matrix
+- Home Page (upload UI)
+- Prediction Result (CT + Blood + Final)
+- Grad-CAM visualization
+- Dashboard (history view)
 
-Grad-CAM visualization was used to validate model interpretability.
+Example:
 
----
+```
+## Screenshots
 
-## Limitations
-
-This system is intended for **research and educational purposes only**.
-
-Limitations include:
-
-- Limited training dataset
-- Not trained on full clinical datasets
-- Should not replace medical professionals
+![Home](screenshots/home.jpeg)
+![Result](screenshots/result.jpeg)
+![Dashboard](screenshots/dashboard.jpeg)
+```
 
 ---
 
-## Future Improvements
-
-Possible improvements include:
-
-- Training on larger medical datasets
-- Integration with hospital PACS systems
-- Long-term patient risk monitoring
-- Cloud deployment
-- Multi-disease detection
-
----
-
-## Medical Disclaimer
-
-This project is developed for **academic and research purposes only** and should not be used for real medical diagnosis.
-
-Always consult qualified healthcare professionals for medical decisions.
-
----
 
